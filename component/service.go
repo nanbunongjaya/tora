@@ -15,7 +15,6 @@ type (
 		Receiver      reflect.Value       // receiver of methods for the service
 		Handlers      map[string]*Handler // registered methods
 		SchedulerName string              // name of scheduler variable in session data
-		Options       options             // options
 	}
 
 	Services struct {
@@ -29,7 +28,7 @@ func (ss *Services) Setup(comps *Components) {
 	}
 
 	for _, comp := range comps.comps {
-		s := newService(comp.Comp, comp.Opts)
+		s := newService(comp)
 		ss.services[s.Name] = s
 	}
 }
@@ -37,7 +36,7 @@ func (ss *Services) Setup(comps *Components) {
 func (ss *Services) List() {
 	for serviceName, service := range ss.services {
 		for handlerName := range service.Handlers {
-			log.Printf("%s.%s", serviceName, handlerName)
+			log.Printf("CMD: %s.%s", serviceName, handlerName)
 		}
 	}
 }
@@ -89,7 +88,7 @@ func safecall(task func()) {
 	task()
 }
 
-func newService(comp Component, opts []Option) *service {
+func newService(comp Component) *service {
 	s := &service{
 		Type:     reflect.TypeOf(comp),
 		Receiver: reflect.ValueOf(comp),
@@ -99,17 +98,8 @@ func newService(comp Component, opts []Option) *service {
 	// Register handlers
 	s.registerHandlers()
 
-	// Apply option function
-	for i := range opts {
-		opts[i](&s.Options)
-	}
-
+	// Store service name
 	s.Name = reflect.Indirect(s.Receiver).Type().Name()
-	if name := s.Options.name; name != "" {
-		s.Name = name
-	}
-
-	s.SchedulerName = s.Options.schedulerName
 
 	return s
 }
@@ -125,13 +115,7 @@ func (s *service) registerHandlers() {
 				raw = true
 			}
 
-			// Apply option function to handler name
-			name := m.Name
-			if s.Options.nameFunc != nil {
-				name = s.Options.nameFunc(name)
-			}
-
-			s.Handlers[name] = &Handler{
+			s.Handlers[m.Name] = &Handler{
 				Type:     m.Type,
 				Receiver: s.Receiver,
 				Method:   m,

@@ -19,34 +19,39 @@ type (
 )
 
 func Compile(comps *component.Components) (string, error) {
+	const mainPkg = "main"
+
 	data := &data{}
 	imports := make(map[string]bool)
-	for _, comp := range comps.List() {
-		t := reflect.TypeOf(comp.Comp)
 
-		pkgPath := t.Elem().PkgPath()
-		structPtrName := removeMainPkgPrefix(fmt.Sprintf("%v", t))
+	for _, component := range comps.List() {
+		compType := reflect.TypeOf(component)
+		pkgPath := compType.Elem().PkgPath()
+		structTypeName := removeMainPkgPrefix(fmt.Sprintf("%v", compType))
 
-		if pkgPath != "main" {
+		// Ignore "main" package
+		if pkgPath != mainPkg {
 			imports[pkgPath] = true
 		}
 
-		data.Components = append(data.Components, fmt.Sprintf("(%s{}).New().(%s)", prefixStarToPrefixAmpersand(structPtrName), structPtrName))
+		// Sprint "&xxx.XXX{}"
+		instanceCreation := fmt.Sprintf("%s{}", prefixStarToPrefixAmpersand(structTypeName))
+
+		data.Components = append(data.Components, instanceCreation)
 	}
 
-	for imp := range imports {
-		data.Imports = append(data.Imports, imp)
+	for pkg := range imports {
+		data.Imports = append(data.Imports, pkg)
 	}
 
 	tmpl, err := template.New("Program").Parse(programTemplate)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to parse template: %w", err)
 	}
 
 	var output strings.Builder
-	err = tmpl.Execute(&output, data)
-	if err != nil {
-		return "", err
+	if err := tmpl.Execute(&output, data); err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
 	}
 
 	return output.String(), nil
@@ -61,7 +66,8 @@ func Output(path string, program string) error {
 	// Convert relative path to absolute path
 	absolutePath := filepath.Join(currentDir, path)
 
-	if err := os.MkdirAll(filepath.Dir(absolutePath), 0755); err != nil {
+	err = os.MkdirAll(filepath.Dir(absolutePath), 0755)
+	if err != nil {
 		return err
 	}
 
@@ -73,6 +79,7 @@ func Output(path string, program string) error {
 	return nil
 }
 
+// Convert "*main.XXX" to "*XXX"
 func removeMainPkgPrefix(s string) string {
 	if strings.HasPrefix(s, "*main.") {
 		return "*" + s[len("*main."):]
@@ -80,6 +87,7 @@ func removeMainPkgPrefix(s string) string {
 	return s
 }
 
+// Convert "*xxx.XXX" to "&xxx.XXX"
 func prefixStarToPrefixAmpersand(s string) string {
 	if strings.HasPrefix(s, "*") {
 		return "&" + s[1:]

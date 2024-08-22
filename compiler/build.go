@@ -16,7 +16,7 @@ func Build(path string) error {
 		return err
 	}
 
-	log.Println(string(output))
+	log.Println("Build plugin ...success")
 
 	return nil
 }

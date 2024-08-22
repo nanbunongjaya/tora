@@ -9,21 +9,16 @@ type (
 	}
 
 	Components struct {
-		comps []CompWithOptions
-	}
-
-	CompWithOptions struct {
-		Comp Component
-		Opts []Option
+		comps []Component
 	}
 )
 
 // Register registers a component with options to Components
-func (cs *Components) Register(c Component, options ...Option) {
-	cs.comps = append(cs.comps, CompWithOptions{c, options})
+func (cs *Components) Register(c Component) {
+	cs.comps = append(cs.comps, c.New().(Component))
 }
 
 // List returns all components with options
-func (cs *Components) List() []CompWithOptions {
+func (cs *Components) List() []Component {
 	return cs.comps
 }

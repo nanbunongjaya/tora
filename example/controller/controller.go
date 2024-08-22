@@ -2,7 +2,8 @@ package main
 
 import (
 	"tora/component"
-	"tora/plugin"
+	"tora/example/greeter"
+	"tora/example/plugin"
 )
 
 var (
@@ -12,7 +13,8 @@ var (
 
 func Setup() {
 	// Registrations of components
-	comps.Register((&plugin.Plugin{}).New().(*plugin.Plugin))
+	comps.Register(&plugin.Plugin{})
+	comps.Register(&greeter.Greeter{})
 
 	// Setup services
 	services.Setup(comps)
