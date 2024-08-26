@@ -5,8 +5,8 @@ import (
 	"os/exec"
 )
 
-func Build(path string) error {
-	cmd := exec.Command("go", "build", "-buildmode=plugin", "-o", "controller.so", path)
+func Build(sofile, gofile string) error {
+	cmd := exec.Command("go", "build", "-buildmode=plugin", "-o", sofile, gofile)
 
 	var output []byte
 	var err error

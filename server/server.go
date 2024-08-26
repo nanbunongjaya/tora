@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	sofile = "controller.so"
-	gofile = "controller/controller.go"
+	sofile = "tora_slave_services_plugin.so"
+	gofile = "tora_slave_services/tora_slave_services.go"
 )
 
 type (
@@ -34,6 +34,7 @@ func New(opts ...Option) *Server {
 		opts[i](s)
 	}
 
+	// Setup the local services
 	if !s.incloud {
 		s.services.Setup(s.comps)
 		return s
@@ -86,7 +87,7 @@ func (s *Server) compile() error {
 		return err
 	}
 
-	err = compiler.Build(gofile)
+	err = compiler.Build(sofile, gofile)
 	if err != nil {
 		return err
 	}
