@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package services;
+
+option go_package = "/servicespb";
+
+service Services {
+  rpc Handle(Request) returns (Response);
+}
+
+message Request {
+  string CMD = 1;
+  bytes Data = 2;
+}
+
+message Response {
+  bytes Data = 1;
+}
