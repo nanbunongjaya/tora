@@ -14,19 +14,19 @@ func (cs *ClientSet) CreateConfigMap(sofile string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	/*
-	   	YAML:
-	   ┌─────────────────────────────────────┐
-	   │ apiVersion: v1                      │
-	   │ kind: ConfigMap                     │
-	   │ metadata:                           │
-	   │   name: tora-slave-services-plugin  │
-	   │   namespace: tora_slaves            │
-	   │ data:                               │
-	   │   tora_slave_services_plugin.so: |  │
-	   │     <file-contents>                 │
-	   └─────────────────────────────────────┘
+		YAML:
+		┌─────────────────────────────────────┐
+		│ apiVersion: v1                      │
+		│ kind: ConfigMap                     │
+		│ metadata:                           │
+		│   name: tora-slave-services-plugin  │
+		│   namespace: tora_slaves            │
+		│ data:                               │
+		│   tora_slave_services_plugin.so: |  │
+		│     <file-contents>                 │
+		└─────────────────────────────────────┘
 	*/
 
 	// Set ConfigMap
