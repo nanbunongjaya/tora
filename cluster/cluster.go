@@ -3,7 +3,7 @@ package cluster
 import (
 	"os"
 
-	"tora/config"
+	"github.com/nanbunongjaya/tora/config"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

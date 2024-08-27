@@ -3,8 +3,8 @@ package server
 import (
 	"plugin"
 
-	"tora/component"
-	"tora/config"
+	"github.com/nanbunongjaya/tora/component"
+	"github.com/nanbunongjaya/tora/config"
 )
 
 type (

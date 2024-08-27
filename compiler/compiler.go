@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/template"
 
-	"tora/component"
+	"github.com/nanbunongjaya/tora/component"
 )
 
 type (

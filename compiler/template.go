@@ -10,7 +10,7 @@ const (
 package main
 
 import (
-	"tora/component"
+	"github.com/nanbunongjaya/tora/component"
 	{{range .Imports}}"{{.}}"
 	{{end}}
 )

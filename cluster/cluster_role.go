@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"tora/config"
+	"github.com/nanbunongjaya/tora/config"
 
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"

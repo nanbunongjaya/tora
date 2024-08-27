@@ -5,12 +5,12 @@ import (
 	"log"
 	"net"
 
-	"tora/cluster"
-	"tora/compiler"
-	"tora/component"
-	"tora/config"
+	"github.com/nanbunongjaya/tora/cluster"
+	"github.com/nanbunongjaya/tora/compiler"
+	"github.com/nanbunongjaya/tora/component"
+	"github.com/nanbunongjaya/tora/config"
 
-	pb "tora/proto/servicespb"
+	pb "github.com/nanbunongjaya/tora/proto/servicespb"
 
 	grpclib "google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"

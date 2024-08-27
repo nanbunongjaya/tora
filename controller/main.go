@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "tora/proto/servicespb"
+	pb "github.com/nanbunongjaya/tora/proto/servicespb"
 )
 
 type (

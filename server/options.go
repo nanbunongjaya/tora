@@ -1,7 +1,7 @@
 package server
 
 import (
-	"tora/component"
+	"github.com/nanbunongjaya/tora/component"
 )
 
 type Option func(s *Server)

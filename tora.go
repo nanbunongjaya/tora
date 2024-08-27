@@ -1,7 +1,7 @@
 package tora
 
 import (
-	"tora/server"
+	"github.com/nanbunongjaya/tora/server"
 )
 
 func NewServer(opts ...server.Option) *server.Server {

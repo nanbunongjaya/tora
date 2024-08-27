@@ -1,4 +1,4 @@
-module tora
+module github.com/nanbunongjaya/tora
 
 go 1.21
 

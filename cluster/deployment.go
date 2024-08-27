@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"tora/config"
+	"github.com/nanbunongjaya/tora/config"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"

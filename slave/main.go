@@ -1,8 +1,8 @@
 package main
 
 import (
-	"tora"
-	"tora/server"
+	"github.com/nanbunongjaya/tora"
+	"github.com/nanbunongjaya/tora/server"
 )
 
 func main() {

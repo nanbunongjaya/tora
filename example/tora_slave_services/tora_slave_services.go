@@ -6,9 +6,9 @@
 package main
 
 import (
-	"tora/component"
-	"tora/example/greeter"
-	"tora/example/plugin"
+	"github.com/nanbunongjaya/tora/component"
+	"github.com/nanbunongjaya/tora/example/greeter"
+	"github.com/nanbunongjaya/tora/example/plugin"
 )
 
 var (
