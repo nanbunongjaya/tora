@@ -33,7 +33,7 @@ func newMasterServices(comps *component.Components) services {
 }
 
 func (m *master) Handle(cmd string, data []byte) error {
-	return m.Handle(cmd, data)
+	return m.services.Handle(cmd, data)
 }
 
 func (m *master) List() {
