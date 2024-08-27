@@ -33,12 +33,19 @@ func (ss *Services) Setup(comps *Components) {
 	}
 }
 
-func (ss *Services) List() {
+func (ss *Services) List() map[string][]string {
+	services := make(map[string][]string, len(ss.services))
 	for serviceName, service := range ss.services {
+
+		handlers := make([]string, 0, len(service.Handlers))
 		for handlerName := range service.Handlers {
-			log.Printf("CMD: %s.%s", serviceName, handlerName)
+			handlers = append(handlers, handlerName)
 		}
+
+		services[serviceName] = handlers
 	}
+
+	return services
 }
 
 func (ss *Services) Handle(cmd string, data []byte) error {

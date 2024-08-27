@@ -5,24 +5,28 @@ import (
 	"log"
 	"net"
 
+	"tora/cluster"
 	"tora/compiler"
 	"tora/component"
 	"tora/config"
 
+	pb "tora/proto/servicespb"
+
 	grpclib "google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	pb "tora/proto/servicespb"
 )
 
 type (
 	Server struct {
 		pb.UnimplementedServicesServer
 
-		comps    *component.Components
-		services services
-		grpc     *grpc
-		incloud  bool
-		ismaster bool
+		comps     *component.Components
+		clientset *cluster.ClientSet
+		services  services
+		grpc      *grpc
+		httpx     *httpx
+		incloud   bool
+		ismaster  bool
 	}
 
 	grpc struct {
@@ -33,17 +37,19 @@ type (
 		server   *grpclib.Server
 	}
 
+	// TODO: implement httpx server
 	httpx struct {
-		
+		enable bool
 	}
 )
 
 func New(opts ...Option) *Server {
 	s := &Server{
 		comps:    &component.Components{},
-		grpc:     &grpc{enable: false}, // default as disable
-		incloud:  false,                // default as local
-		ismaster: true,                 // default as master
+		grpc:     &grpc{enable: false},  // default as disable
+		httpx:    &httpx{enable: false}, // default as disable
+		incloud:  false,                 // default as local
+		ismaster: true,                  // default as master
 	}
 
 	for i := range opts {
@@ -107,10 +113,39 @@ func (s *Server) compilePlugin() error {
 }
 
 func (s *Server) initializeK8sResources() error {
-	// TODO:
-	// Setup ConfigMap
-	// Create RBAC resources
-	// Create Pods
+	clientset, err := cluster.Init()
+	if err != nil {
+		return err
+	}
+
+	s.clientset = clientset
+
+	if err := s.clientset.UpsertNamespace(); err != nil {
+		return err
+	}
+
+	if err := s.clientset.UpsertConfigMap(config.SO_FILE); err != nil {
+		return err
+	}
+
+	if err := s.clientset.UpsertClusterRole(); err != nil {
+		return err
+	}
+
+	if err := s.clientset.UpsertClusterRoleBinding(); err != nil {
+		return err
+	}
+
+	for service := range s.services.List() {
+		if err := s.clientset.UpsertService(service); err != nil {
+			return err
+		}
+
+		if err := s.clientset.UpsertDeployment(service); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -122,6 +157,14 @@ func (s *Server) Handle(ctx context.Context, req *pb.Request) (*pb.Response, err
 	log.Printf("Received CMD: %s, Data: %s", req.CMD, string(req.Data))
 
 	return &pb.Response{Data: req.Data}, nil
+}
+
+func (s *Server) Info() {
+	for service, handlers := range s.services.List() {
+		for _, handler := range handlers {
+			log.Printf("Registered handler: %v.%v", service, handler)
+		}
+	}
 }
 
 func (s *Server) ServeGRPC() error {

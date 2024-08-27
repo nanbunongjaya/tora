@@ -19,6 +19,5 @@ func Compile() {
 
 	tora.NewServer(
 		server.WithComponents(comps),
-		server.WithInCloud(),
 	)
 }

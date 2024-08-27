@@ -11,5 +11,7 @@ func NewServer(opts ...server.Option) *server.Server {
 func ServeWithGRPC(opts ...server.Option) error {
 	s := server.New(opts...)
 
+	s.Info()
+
 	return s.ServeGRPC()
 }

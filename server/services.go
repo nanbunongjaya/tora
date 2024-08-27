@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"plugin"
 
 	"tora/component"
@@ -10,7 +9,7 @@ import (
 
 type (
 	services interface {
-		List()
+		List() map[string][]string
 		Handle(cmd string, data []byte) error
 	}
 
@@ -36,8 +35,8 @@ func (m *master) Handle(cmd string, data []byte) error {
 	return m.services.Handle(cmd, data)
 }
 
-func (m *master) List() {
-	m.services.List()
+func (m *master) List() map[string][]string {
+	return m.services.List()
 }
 
 func newSlaveServices() (services, error) {
@@ -67,11 +66,12 @@ func (s *slave) Handle(cmd string, data []byte) error {
 	return f.(func(string, []byte) error)(cmd, data)
 }
 
-func (s *slave) List() {
+func (s *slave) List() map[string][]string {
 	// Call "List" function
 	f, err := s.plugin.Lookup("List")
 	if err != nil {
-		log.Fatal(err)
+		return nil
 	}
-	f.(func())()
+
+	return f.(func() map[string][]string)()
 }

@@ -13,11 +13,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-func (cs *ClientSet) UpsertService(serviceName, deploymentName string) error {
-	service := newService(serviceName, deploymentName)
+func (cs *ClientSet) UpsertService(appName string) error {
+	service := newService(appName)
 
 	// Check if the Service exists
-	existingService, err := cs.getService(serviceName)
+	existingService, err := cs.getService(appName)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to check service existence: %w", err)
 	}
@@ -31,18 +31,18 @@ func (cs *ClientSet) UpsertService(serviceName, deploymentName string) error {
 	return cs.createService(service)
 }
 
-func newService(serviceName, deploymentName string) *corev1.Service {
+func newService(appName string) *corev1.Service {
 	/*
 		YAML:
 		┌─────────────────────────────────────────────┐
 		│ apiVersion: v1                              │
 		│ kind: Service                               │
 		│ metadata:                                   │
-		│   name: <service-name>                      │
+		│   name: <app-name>-service                  │
 		│   namespace: tora-slaves                    │
 		│ spec:                                       │
 		│   selector:                                 │
-		│     app: <deployment-name>                  │
+		│     app: <app-name>-deployment              │
 		│   ports:                                    │
 		│   - protocol: TCP                           │
 		│     port: 50051                             │
@@ -52,12 +52,12 @@ func newService(serviceName, deploymentName string) *corev1.Service {
 
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      serviceName,
+			Name:      withServiceSuffix(appName),
 			Namespace: config.TORA_SLAVE_NAMESPACE,
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
-				"app": deploymentName,
+				"app": withDeploymentSuffix(appName),
 			},
 			Ports: []corev1.ServicePort{
 				{
@@ -103,4 +103,8 @@ func (cs *ClientSet) updateService(service, existingService *corev1.Service) err
 	log.Println("Service updated successfully")
 
 	return nil
+}
+
+func withServiceSuffix(s string) string {
+	return s + "-service"
 }
