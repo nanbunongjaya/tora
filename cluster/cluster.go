@@ -1,52 +1,38 @@
 package cluster
 
 import (
-	"context"
-	"os"
-
-	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
-var (
-	clientset *kubernetes.Clientset
+type (
+	ClientSet struct {
+		clientset *kubernetes.Clientset // kubernetes api client set
+		namespace string                // namespace of master pod
+	}
 )
 
-func Init() {
-	// Create Kubernetes API client
+func Init() (*ClientSet, error) {
+	// Get incluster configuration
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	clientset, err = kubernetes.NewForConfig(config)
+	// Create Kubernetes API client
+	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-}
 
-func CreateConfigMap(sofile string) {
-	soFileData, err := os.ReadFile(sofile)
+	// Get master pod namespace
+	namespace, err := GetNamespace()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	// Build ConfigMap
-	configMap := &v1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "tora-controller",
-			Namespace: "tora",
-		},
-		Data: map[string]string{
-			"controller.so": string(soFileData),
-		},
-	}
-
-	// Create ConfigMap
-	_, err = clientset.CoreV1().ConfigMaps("tora").Create(context.Background(), configMap, metav1.CreateOptions{})
-	if err != nil {
-		panic(err)
-	}
+	return &ClientSet{
+		clientset: clientset,
+		namespace: namespace,
+	}, nil
 }
