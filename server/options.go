@@ -25,3 +25,11 @@ func WithAsSlave() Option {
 		s.ismaster = false
 	}
 }
+
+func WithGRPC(network, address string) Option {
+	return func(s *Server) {
+		s.grpc.enable = true
+		s.grpc.network = network
+		s.grpc.address = address
+	}
+}

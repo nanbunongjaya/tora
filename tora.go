@@ -4,6 +4,12 @@ import (
 	"tora/server"
 )
 
-func Serve(opts ...server.Option) (*server.Server, error) {
-	return server.New(opts...), nil
+func NewServer(opts ...server.Option) *server.Server {
+	return server.New(opts...)
+}
+
+func ServeWithGRPC(opts ...server.Option) error {
+	s := server.New(opts...)
+
+	return s.ServeGRPC()
 }

@@ -3,12 +3,14 @@ package server
 import (
 	"context"
 	"log"
-	"plugin"
+	"net"
 
 	"tora/compiler"
 	"tora/component"
 	"tora/config"
 
+	grpclib "google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	pb "tora/proto/servicespb"
 )
 
@@ -17,48 +19,69 @@ type (
 		pb.UnimplementedServicesServer
 
 		comps    *component.Components
-		services *component.Services
-		plugin   *plugin.Plugin
+		services services
+		grpc     *grpc
 		incloud  bool
 		ismaster bool
+	}
+
+	grpc struct {
+		enable   bool
+		network  string
+		address  string
+		listener net.Listener
+		server   *grpclib.Server
+	}
+
+	httpx struct {
+		
 	}
 )
 
 func New(opts ...Option) *Server {
 	s := &Server{
 		comps:    &component.Components{},
-		services: &component.Services{},
-		plugin:   &plugin.Plugin{},
-		incloud:  false, // default as local
-		ismaster: true,  // default as master
+		grpc:     &grpc{enable: false}, // default as disable
+		incloud:  false,                // default as local
+		ismaster: true,                 // default as master
 	}
 
 	for i := range opts {
 		opts[i](s)
 	}
 
-	// Setup the local services
+	// Setup in local
 	if !s.incloud {
-		s.services.Setup(s.comps)
+		s.services = newMasterServices(s.comps)
 		return s
-	}
-
-	if err := s.compilePlugin(); err != nil {
-		log.Fatal(err)
 	}
 
 	switch s.ismaster {
 	case true:
 		// Initialize as master
+		if err := s.compilePlugin(); err != nil {
+			log.Fatal(err)
+		}
+
 		if err := s.initializeK8sResources(); err != nil {
 			log.Fatal(err)
 		}
 
 	case false:
 		// Initialize as slave
-		if err := s.loadPlugin(); err != nil {
+		services, err := newSlaveServices()
+		if err != nil {
 			log.Fatal(err)
 		}
+
+		s.services = services
+		s.grpc.server = grpclib.NewServer()
+
+		// Enable server reflection for easier debugging
+		reflection.Register(s.grpc.server)
+
+		// Register the server with the gRPC server
+		pb.RegisterServicesServer(s.grpc.server, s)
 	}
 
 	return s
@@ -83,31 +106,6 @@ func (s *Server) compilePlugin() error {
 	return nil
 }
 
-func (s *Server) loadPlugin() error {
-	p, err := plugin.Open(config.SO_FILE)
-	if err != nil {
-		return err
-	}
-
-	s.plugin = p
-
-	// Call setup function
-	f, err := p.Lookup("Setup")
-	if err != nil {
-		return err
-	}
-	f.(func())()
-
-	// Call list function
-	f, err = p.Lookup("List")
-	if err != nil {
-		return err
-	}
-	f.(func())()
-
-	return nil
-}
-
 func (s *Server) initializeK8sResources() error {
 	// TODO:
 	// Setup ConfigMap
@@ -117,7 +115,7 @@ func (s *Server) initializeK8sResources() error {
 }
 
 func (s *Server) Handle(ctx context.Context, req *pb.Request) (*pb.Response, error) {
-	if err := s.handle(req.CMD, req.Data); err != nil {
+	if err := s.services.Handle(req.CMD, req.Data); err != nil {
 		return nil, err
 	}
 
@@ -126,19 +124,34 @@ func (s *Server) Handle(ctx context.Context, req *pb.Request) (*pb.Response, err
 	return &pb.Response{Data: req.Data}, nil
 }
 
-func (s *Server) handle(cmd string, data []byte) error {
-	if !s.incloud {
-		return s.services.Handle(cmd, data)
-	}
-
-	f, err := s.plugin.Lookup("Handle")
-	if err != nil {
+func (s *Server) ServeGRPC() error {
+	if err := s.grpc.Listen(); err != nil {
 		return err
 	}
 
-	err = f.(func(string, []byte) error)(cmd, data)
-	if err != nil {
+	if err := s.grpc.Serve(); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (g *grpc) Listen() error {
+	listener, err := net.Listen(g.network, g.address)
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
+
+	g.listener = listener
+
+	return nil
+}
+
+func (g *grpc) Serve() error {
+	log.Printf("gRPC server is listening %v on: (%v)", g.network, g.address)
+
+	if err := g.server.Serve(g.listener); err != nil {
+		log.Fatalf("Failed to serve: %v", err)
 	}
 
 	return nil

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"tora"
 	"tora/component"
 	"tora/example/greeter"
@@ -19,13 +17,8 @@ func Compile() {
 	comps.Register(&plugin.Plugin{})
 	comps.Register(&greeter.Greeter{})
 
-	s, err := tora.Serve(
+	tora.NewServer(
 		server.WithComponents(comps),
 		server.WithInCloud(),
 	)
-	if err != nil {
-		log.Print(err)
-	}
-
-	_ = s
 }
