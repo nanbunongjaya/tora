@@ -1,6 +1,10 @@
 package cluster
 
 import (
+	"os"
+
+	"tora/config"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -26,7 +30,7 @@ func Init() (*ClientSet, error) {
 	}
 
 	// Get master pod namespace
-	namespace, err := GetNamespace()
+	namespace, err := getMasterPodNamespace()
 	if err != nil {
 		return nil, err
 	}
@@ -35,4 +39,12 @@ func Init() (*ClientSet, error) {
 		clientset: clientset,
 		namespace: namespace,
 	}, nil
+}
+
+func getMasterPodNamespace() (string, error) {
+	namespace, err := os.ReadFile(config.NAMESPACE_FILE)
+	if err != nil {
+		return "", err
+	}
+	return string(namespace), nil
 }
