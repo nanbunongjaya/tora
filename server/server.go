@@ -1,24 +1,26 @@
 package server
 
 import (
+	"context"
 	"log"
 	"plugin"
 
 	"tora/compiler"
 	"tora/component"
-)
+	"tora/config"
 
-const (
-	sofile = "tora_slave_services_plugin.so"
-	gofile = "tora_slave_services/tora_slave_services.go"
+	pb "tora/proto/servicespb"
 )
 
 type (
 	Server struct {
+		pb.UnimplementedServicesServer
+
 		comps    *component.Components
 		services *component.Services
 		plugin   *plugin.Plugin
 		incloud  bool
+		ismaster bool
 	}
 )
 
@@ -27,7 +29,8 @@ func New(opts ...Option) *Server {
 		comps:    &component.Components{},
 		services: &component.Services{},
 		plugin:   &plugin.Plugin{},
-		incloud:  false,
+		incloud:  false, // default as local
+		ismaster: true,  // default as master
 	}
 
 	for i := range opts {
@@ -40,19 +43,48 @@ func New(opts ...Option) *Server {
 		return s
 	}
 
-	if err := s.compile(); err != nil {
+	if err := s.compilePlugin(); err != nil {
 		log.Fatal(err)
 	}
 
-	if err := s.setup(); err != nil {
-		log.Fatal(err)
+	switch s.ismaster {
+	case true:
+		// Initialize as master
+		if err := s.initializeK8sResources(); err != nil {
+			log.Fatal(err)
+		}
+
+	case false:
+		// Initialize as slave
+		if err := s.loadPlugin(); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	return s
 }
 
-func (s *Server) setup() error {
-	p, err := plugin.Open(sofile)
+func (s *Server) compilePlugin() error {
+	program, err := compiler.Compile(s.comps)
+	if err != nil {
+		return err
+	}
+
+	err = compiler.Output(config.GO_FILE, program)
+	if err != nil {
+		return err
+	}
+
+	err = compiler.Build(config.SO_FILE, config.GO_FILE)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Server) loadPlugin() error {
+	p, err := plugin.Open(config.SO_FILE)
 	if err != nil {
 		return err
 	}
@@ -76,26 +108,25 @@ func (s *Server) setup() error {
 	return nil
 }
 
-func (s *Server) compile() error {
-	program, err := compiler.Compile(s.comps)
-	if err != nil {
-		return err
-	}
-
-	err = compiler.Output(gofile, program)
-	if err != nil {
-		return err
-	}
-
-	err = compiler.Build(sofile, gofile)
-	if err != nil {
-		return err
-	}
-
+func (s *Server) initializeK8sResources() error {
+	// TODO:
+	// Setup ConfigMap
+	// Create RBAC resources
+	// Create Pods
 	return nil
 }
 
-func (s *Server) Handle(cmd string, data []byte) error {
+func (s *Server) Handle(ctx context.Context, req *pb.Request) (*pb.Response, error) {
+	if err := s.handle(req.CMD, req.Data); err != nil {
+		return nil, err
+	}
+
+	log.Printf("Received CMD: %s, Data: %s", req.CMD, string(req.Data))
+
+	return &pb.Response{Data: req.Data}, nil
+}
+
+func (s *Server) handle(cmd string, data []byte) error {
 	if !s.incloud {
 		return s.services.Handle(cmd, data)
 	}

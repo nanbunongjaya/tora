@@ -19,3 +19,9 @@ func WithInCloud() Option {
 		s.incloud = true
 	}
 }
+
+func WithAsSlave() Option {
+	return func(s *Server) {
+		s.ismaster = false
+	}
+}

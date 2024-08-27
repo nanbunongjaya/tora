@@ -27,12 +27,5 @@ func Compile() {
 		log.Print(err)
 	}
 
-	s.Handle("Greeter.Increase", nil)
-	s.Handle("Greeter.Increase", nil)
-	s.Handle("Greeter.Increase", nil)
-	s.Handle("Greeter.Increase", nil)
-	s.Handle("Greeter.Increase", nil)
-	s.Handle("Greeter.Increase", nil)
-	s.Handle("Greeter.Increase", nil)
-	s.Handle("Greeter.Increase", nil)
+	_ = s
 }
